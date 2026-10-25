@@ -66,6 +66,19 @@ def _walk_files(root: Path) -> tuple[list[dict[str, Any]], int]:
                     opened_info = os.fstat(stream.fileno())
                     if not stat.S_ISREG(opened_info.st_mode):
                         raise ManifestError(f"not a regular file: '{path}'")
+                    # Bind the bytes read to the object observed by scandir. This
+                    # detects replacement between lstat and open (including a
+                    # symlink swap where O_NOFOLLOW is unavailable).
+                    observed_identity = (
+                        info.st_dev, info.st_ino, info.st_size,
+                        info.st_mtime_ns, info.st_ctime_ns,
+                    )
+                    opened_identity = (
+                        opened_info.st_dev, opened_info.st_ino, opened_info.st_size,
+                        opened_info.st_mtime_ns, opened_info.st_ctime_ns,
+                    )
+                    if opened_identity != observed_identity:
+                        raise ManifestError(f"file changed before hashing: '{path}'")
                     while True:
                         block = stream.read(CHUNK_SIZE)
                         if not block:
@@ -76,9 +89,15 @@ def _walk_files(root: Path) -> tuple[list[dict[str, Any]], int]:
             except OSError as exc:
                 raise ManifestError(f"cannot read '{path}': {_error_detail(exc)}") from exc
 
-            if (byte_count != opened_info.st_size or
-                    (opened_info.st_size, opened_info.st_mtime_ns) !=
-                    (final_info.st_size, final_info.st_mtime_ns)):
+            identity_before = (
+                opened_info.st_dev, opened_info.st_ino, opened_info.st_size,
+                opened_info.st_mtime_ns, opened_info.st_ctime_ns,
+            )
+            identity_after = (
+                final_info.st_dev, final_info.st_ino, final_info.st_size,
+                final_info.st_mtime_ns, final_info.st_ctime_ns,
+            )
+            if byte_count != opened_info.st_size or identity_before != identity_after:
                 raise ManifestError(f"file changed while being hashed: '{path}'")
 
             records.append({

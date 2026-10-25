@@ -154,6 +154,100 @@ class HashManifestTests(unittest.TestCase):
                 with self.assertRaisesRegex(HASH_MANIFEST.ManifestError, "cannot read.*synthetic read failure"):
                     HASH_MANIFEST._walk_files(root)
 
+    def test_detects_file_replaced_between_enumeration_and_open(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            evidence = root / "evidence"
+            evidence.mkdir()
+            target = evidence / "sample.bin"
+            target.write_bytes(b"original")
+            replacement = root / "replacement.bin"
+            replacement.write_bytes(b"different inode")
+            real_open = HASH_MANIFEST.os.open
+
+            with mock.patch.object(
+                HASH_MANIFEST.os,
+                "open",
+                side_effect=lambda _path, flags: real_open(replacement, flags),
+            ):
+                with self.assertRaisesRegex(HASH_MANIFEST.ManifestError, "changed before hashing"):
+                    HASH_MANIFEST._walk_files(evidence)
+
+    def test_detects_file_modified_between_enumeration_and_open(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "sample.bin"
+            target.write_bytes(b"before")
+            real_open = HASH_MANIFEST.os.open
+
+            def mutate_then_open(path, flags):
+                target.write_bytes(b"changed before open")
+                return real_open(path, flags)
+
+            with mock.patch.object(HASH_MANIFEST.os, "open", side_effect=mutate_then_open):
+                with self.assertRaisesRegex(HASH_MANIFEST.ManifestError, "changed before hashing"):
+                    HASH_MANIFEST._walk_files(root)
+
+    def test_detects_file_modified_during_hashing(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "sample.bin"
+            target.write_bytes(b"before")
+            real_fdopen = HASH_MANIFEST.os.fdopen
+
+            class MutatingReader:
+                def __init__(self, descriptor: int, mode: str) -> None:
+                    self.stream = real_fdopen(descriptor, mode)
+                    self.mutated = False
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *args):
+                    return self.stream.__exit__(*args)
+
+                def fileno(self):
+                    return self.stream.fileno()
+
+                def read(self, size: int) -> bytes:
+                    data = self.stream.read(size)
+                    if not self.mutated:
+                        self.mutated = True
+                        target.write_bytes(b"changed during read")
+                    return data
+
+            with mock.patch.object(HASH_MANIFEST.os, "fdopen", side_effect=MutatingReader):
+                with self.assertRaisesRegex(HASH_MANIFEST.ManifestError, "changed while being hashed"):
+                    HASH_MANIFEST._walk_files(root)
+
+    def test_output_collision_after_preflight_preserves_existing_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            evidence = base / "evidence"
+            evidence.mkdir()
+            output = base / "manifest.json"
+            output.write_text("concurrent writer", encoding="utf-8")
+            payload = {"generated_at_utc": "test", "files": []}
+
+            with self.assertRaisesRegex(HASH_MANIFEST.ManifestError, "refusing to overwrite"):
+                HASH_MANIFEST._write_manifest(output, payload)
+            self.assertEqual(output.read_text(encoding="utf-8"), "concurrent writer")
+
+    def test_synthetic_case_manifest_matches_evidence(self) -> None:
+        case = PROJECT_ROOT / "dfir" / "casos" / "2026-01-acesso-sintetico"
+        evidence = case / "evidencias"
+        expected = json.loads((case / "manifest.sha256.json").read_text(encoding="utf-8"))
+
+        with tempfile.TemporaryDirectory() as temporary:
+            generated = Path(temporary) / "manifest.json"
+            result = self.run_tool(evidence, generated)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            actual = json.loads(generated.read_text(encoding="utf-8"))
+
+        self.assertEqual(actual["files"], expected["files"])
+        for record in actual["files"]:
+            self.assertEqual(record["sha256"], hashlib.sha256((evidence / record["path"]).read_bytes()).hexdigest())
+
 
 if __name__ == "__main__":
     unittest.main()
