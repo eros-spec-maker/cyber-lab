@@ -3,3 +3,5 @@
 *.bak2
 tools/phoneinfoga/
 tools/spiderfoot/
+__pycache__/
+*.py[cod]
