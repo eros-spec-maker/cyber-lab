@@ -1,6 +1,6 @@
 # Cyber Lab
 
-Laboratório educacional para exercícios defensivos, DFIR, forense digital, OSINT e testes autorizados. Use apenas dados sintéticos ou sistemas próprios, com escopo e autorização documentados.
+Laboratório educacional para DFIR, forense digital, OSINT, segurança defensiva e pentest autorizado. Use dados sintéticos, máquinas próprias ou ambientes com autorização documentada.
 
 ## Estrutura
 
@@ -9,6 +9,7 @@ Laboratório educacional para exercícios defensivos, DFIR, forense digital, OSI
 - `dfir/`, `forense/`, `osint/`, `defensiva/` e `pentest-autorizado/`: roteiros e material de estudo por área.
 - `docs/laboratorio/`: procedimentos, limites e documentação de evidências.
 - `tests/`: testes com dados sintéticos.
+- `keylogger_educacional.py`: demonstração consentida de captura local, visível e encerrada com ESC.
 
 ## Primeira ferramenta: manifesto SHA-256
 
@@ -18,11 +19,24 @@ python3 tools/forensics/hash_manifest.py ./sample-evidence --output ../manifest.
 
 A ferramenta lê arquivos em blocos, ignora links simbólicos, não altera o conteúdo e recusa sobrescrever o manifesto. A leitura pode atualizar metadados de acesso conforme o sistema de arquivos. Guarde o manifesto separadamente e proteja-o contra alterações. Consulte [preservação de evidências](docs/laboratorio/preservacao-de-evidencias.md) e [hashes e cadeia de custódia](docs/laboratorio/hashes-e-cadeia-de-custodia.md).
 
+## Demonstração de captura local
+
+O script `keylogger_educacional.py` requer a dependência listada em `requirements.txt`, solicita que o usuário digite `CONCORDO`, grava somente em `keylog.txt` no diretório atual e encerra com ESC. Ele não opera escondido, não persiste, não ofusca e não transmite dados. Use apenas em ambiente próprio e autorizado; não digite credenciais ou dados reais. O arquivo de log está excluído do Git.
+
+```sh
+python3 -m pip install -r requirements.txt
+python3 keylogger_educacional.py
+```
+
+Veja as [orientações de uso seguro](docs/USO_SEGURO.md).
+
 Execute os testes com a biblioteca padrão:
 
 ```sh
 python3 -m unittest discover -s tests -v
 ```
+
+O workflow em `.github/workflows/codeql.yml` roda a mesma suíte e analisa o código Python com CodeQL.
 
 ## Ferramenta existente
 

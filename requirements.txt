@@ -1,0 +1,2 @@
+# Dependência necessária somente para a demonstração local de captura de teclas.
+pynput>=1.7.6

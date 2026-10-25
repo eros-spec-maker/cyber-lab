@@ -1,0 +1,21 @@
+title: Repeated Failed Windows Logons From One Source
+id: 3d6f50a2-48bf-4f34-83e5-1eb5b3d598fa
+status: test
+description: Detect a high count of failed Windows logons from one source in a short interval.
+references:
+  - https://learn.microsoft.com/windows/security/threat-protection/auditing/event-4625
+author: cyber-lab contributors
+date: 2026-10-25
+tags:
+  - attack.credential_access
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4625
+  condition: selection | count() by IpAddress > 10
+  timeframe: 10m
+falsepositives:
+  - Misconfigured services or users retrying a stale password
+level: medium

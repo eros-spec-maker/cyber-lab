@@ -1,0 +1,2 @@
+source_id,url,accessed_at_utc,collection_method,limitations
+SYN-001,https://example.invalid/synthetic-record,2026-01-01T12:00:00Z,synthetic-training-example,Reserved example domain; no real collection performed

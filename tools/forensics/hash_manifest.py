@@ -21,6 +21,10 @@ class ManifestError(Exception):
     """An expected input, traversal, or output error suitable for CLI display."""
 
 
+def _error_detail(exc: OSError) -> str:
+    return exc.strerror or str(exc) or type(exc).__name__
+
+
 def _walk_files(root: Path) -> tuple[list[dict[str, Any]], int]:
     records: list[dict[str, Any]] = []
     skipped_symlinks = 0
@@ -31,7 +35,7 @@ def _walk_files(root: Path) -> tuple[list[dict[str, Any]], int]:
             with os.scandir(directory) as iterator:
                 entries = sorted(iterator, key=lambda item: item.name)
         except OSError as exc:
-            raise ManifestError(f"cannot read directory '{directory}': {exc.strerror}") from exc
+            raise ManifestError(f"cannot read directory '{directory}': {_error_detail(exc)}") from exc
 
         for entry in entries:
             path = Path(entry.path)
@@ -44,7 +48,7 @@ def _walk_files(root: Path) -> tuple[list[dict[str, Any]], int]:
                     continue
                 info = entry.stat(follow_symlinks=False)
             except OSError as exc:
-                raise ManifestError(f"cannot inspect '{path}': {exc.strerror}") from exc
+                raise ManifestError(f"cannot inspect '{path}': {_error_detail(exc)}") from exc
 
             if not stat.S_ISREG(info.st_mode):
                 continue
@@ -53,7 +57,7 @@ def _walk_files(root: Path) -> tuple[list[dict[str, Any]], int]:
             try:
                 descriptor = os.open(path, flags)
             except OSError as exc:
-                raise ManifestError(f"cannot open '{path}': {exc.strerror}") from exc
+                raise ManifestError(f"cannot open '{path}': {_error_detail(exc)}") from exc
 
             digest = hashlib.sha256()
             byte_count = 0
@@ -70,7 +74,7 @@ def _walk_files(root: Path) -> tuple[list[dict[str, Any]], int]:
                         byte_count += len(block)
                     final_info = os.fstat(stream.fileno())
             except OSError as exc:
-                raise ManifestError(f"cannot read '{path}': {exc.strerror}") from exc
+                raise ManifestError(f"cannot read '{path}': {_error_detail(exc)}") from exc
 
             if (byte_count != opened_info.st_size or
                     (opened_info.st_size, opened_info.st_mtime_ns) !=
@@ -105,7 +109,7 @@ def _write_manifest(output: Path, payload: dict[str, Any]) -> None:
     except FileExistsError as exc:
         raise ManifestError(f"output already exists; refusing to overwrite: '{output}'") from exc
     except OSError as exc:
-        raise ManifestError(f"cannot write output '{output}': {exc.strerror}") from exc
+        raise ManifestError(f"cannot write output '{output}': {_error_detail(exc)}") from exc
     finally:
         if temporary_path is not None:
             try:
@@ -134,7 +138,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         root = supplied_root.resolve(strict=True)
     except (OSError, RuntimeError) as exc:
-        print(f"error: cannot resolve input directory '{supplied_root}': {exc}", file=sys.stderr)
+        detail = _error_detail(exc) if isinstance(exc, OSError) else str(exc)
+        print(f"error: cannot resolve input directory '{supplied_root}': {detail}", file=sys.stderr)
         return 2
     if not root.is_dir():
         print(f"error: input is not a directory: '{root}'", file=sys.stderr)
@@ -147,7 +152,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         output_parent = raw_output.parent.resolve(strict=True)
     except (OSError, RuntimeError) as exc:
-        print(f"error: output directory is unavailable '{raw_output.parent}': {exc}", file=sys.stderr)
+        detail = _error_detail(exc) if isinstance(exc, OSError) else str(exc)
+        print(f"error: output directory is unavailable '{raw_output.parent}': {detail}", file=sys.stderr)
         return 2
     if not output_parent.is_dir():
         print(f"error: output parent is not a directory: '{output_parent}'", file=sys.stderr)

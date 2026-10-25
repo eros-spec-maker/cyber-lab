@@ -126,7 +126,7 @@ class HashManifestTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             with mock.patch.object(HASH_MANIFEST.os, "scandir", side_effect=PermissionError("denied")):
-                with self.assertRaisesRegex(HASH_MANIFEST.ManifestError, "cannot read directory"):
+                with self.assertRaisesRegex(HASH_MANIFEST.ManifestError, "cannot read directory.*denied"):
                     HASH_MANIFEST._walk_files(root)
 
     def test_reports_file_read_error(self) -> None:
@@ -151,7 +151,7 @@ class HashManifestTests(unittest.TestCase):
                     raise OSError("synthetic read failure")
 
             with mock.patch.object(HASH_MANIFEST.os, "fdopen", side_effect=FailingReader):
-                with self.assertRaisesRegex(HASH_MANIFEST.ManifestError, "cannot read"):
+                with self.assertRaisesRegex(HASH_MANIFEST.ManifestError, "cannot read.*synthetic read failure"):
                     HASH_MANIFEST._walk_files(root)
 
 

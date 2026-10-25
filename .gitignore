@@ -5,3 +5,4 @@ tools/phoneinfoga/
 tools/spiderfoot/
 __pycache__/
 *.py[cod]
+keylog.txt
