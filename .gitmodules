@@ -1,0 +1,3 @@
+[submodule "tools/theHarvester"]
+	path = tools/theHarvester
+	url = https://github.com/laramies/theHarvester.git
