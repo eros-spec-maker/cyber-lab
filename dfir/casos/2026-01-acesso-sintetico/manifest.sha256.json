@@ -1,0 +1,15 @@
+{
+  "generated_at_utc": "2026-10-25T03:55:07.022919Z",
+  "files": [
+    {
+      "path": "auth_events.jsonl",
+      "size_bytes": 555,
+      "sha256": "867be82a42e48a86c5e6c57bfcb462349e343393ffcdd3f9be8e86ff2fb65286"
+    },
+    {
+      "path": "host_inventory.txt",
+      "size_bytes": 180,
+      "sha256": "d692cef957bcd0f628a073f4bb9ba84fd17a6ba2c5947db733cd3f2f7f0b2ecd"
+    }
+  ]
+}

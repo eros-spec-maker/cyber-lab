@@ -1,43 +1,42 @@
 # Cyber Lab
 
-Laboratório educacional para DFIR, forense digital, OSINT, segurança defensiva e pentest autorizado. Use dados sintéticos, máquinas próprias ou ambientes com autorização documentada.
+Laboratório educacional para DFIR, forense digital, OSINT, defesa e testes autorizados. O repositório prioriza exercícios reproduzíveis, integridade dos artefatos e limites de autorização. Não inclua evidências reais, dados pessoais, credenciais ou segredos.
 
-## Estrutura
+## Comece aqui
 
-- `tools/forensics/`: utilitários locais de triagem e integridade de arquivos.
-- `tools/osint/`: utilitários para fontes públicas, respeitando termos e privacidade.
-- `dfir/`, `forense/`, `osint/`, `defensiva/` e `pentest-autorizado/`: roteiros e material de estudo por área.
-- `docs/laboratorio/`: procedimentos, limites e documentação de evidências.
-- `tests/`: testes com dados sintéticos.
-- `keylogger_educacional.py`: demonstração consentida de captura local, visível e encerrada com ESC.
+- [Caso DFIR sintético: sequência de autenticação](dfir/casos/2026-01-acesso-sintetico/README.md) — evidências fictícias, manifesto SHA-256, metodologia, conclusão e limitações.
+- [Manifesto SHA-256](tools/forensics/README.md) — inventário local de arquivos regulares sem sobrescrever saídas.
+- [Procedimentos de laboratório](docs/laboratorio/) — escopo, coleta, preservação, hashes e limitações.
+- [Uso seguro](docs/USO_SEGURO.md) — regras para exercícios autorizados e a demonstração de teclado.
 
-## Primeira ferramenta: manifesto SHA-256
+## Manifestar evidências
+
+Use uma cópia de trabalho, quando possível, e armazene a saída fora da árvore examinada:
 
 ```sh
 python3 tools/forensics/hash_manifest.py ./sample-evidence --output ../manifest.json
 ```
 
-A ferramenta lê arquivos em blocos, ignora links simbólicos, não altera o conteúdo e recusa sobrescrever o manifesto. A leitura pode atualizar metadados de acesso conforme o sistema de arquivos. Guarde o manifesto separadamente e proteja-o contra alterações. Consulte [preservação de evidências](docs/laboratorio/preservacao-de-evidencias.md) e [hashes e cadeia de custódia](docs/laboratorio/hashes-e-cadeia-de-custodia.md).
+A ferramenta calcula SHA-256 em blocos, ignora links simbólicos, ordena caminhos e se recusa a substituir um arquivo de saída existente. Detecta substituições e alterações observáveis em arquivos durante a leitura. A leitura pode atualizar metadados de acesso (`atime`); não há snapshot ou bloqueio contra alterações concorrentes, então prefira uma cópia estável. Veja [hashes e cadeia de custódia](docs/laboratorio/hashes-e-cadeia-de-custodia.md).
 
-## Demonstração de captura local
+## Verificação local
 
-O script `keylogger_educacional.py` requer a dependência listada em `requirements.txt`, solicita que o usuário digite `CONCORDO`, grava somente em `keylog.txt` no diretório atual e encerra com ESC. Ele não opera escondido, não persiste, não ofusca e não transmite dados. Use apenas em ambiente próprio e autorizado; não digite credenciais ou dados reais. O arquivo de log está excluído do Git.
-
-```sh
-python3 -m pip install -r requirements.txt
-python3 keylogger_educacional.py
-```
-
-Veja as [orientações de uso seguro](docs/USO_SEGURO.md).
-
-Execute os testes com a biblioteca padrão:
+Somente biblioteca padrão, exceto a dependência opcional da demonstração de teclado:
 
 ```sh
 python3 -m unittest discover -s tests -v
 ```
 
-O workflow em `.github/workflows/codeql.yml` roda a mesma suíte e analisa o código Python com CodeQL.
+O workflow GitHub Actions executa os testes e análise CodeQL para Python em pushes, pull requests e agenda semanal.
 
-## Ferramenta existente
+## Demonstração educacional de teclado
 
-`tools/metasploit.sh` é um instalador de terceiros voltado a Termux: instala pacotes, altera arquivos do ambiente, remove uma instalação anterior no caminho configurado e clona código externo. Revise o conteúdo e valide o escopo antes de executá-lo. Este laboratório não recomenda executar ferramentas contra sistemas sem autorização explícita.
+`keylogger_educacional.py` é uma captura local em primeiro plano. Pede confirmação explícita, mostra a atividade, grava no diretório atual e encerra com ESC. Não tem persistência, ocultação, ofuscação ou rede. Use apenas em dispositivo próprio ou com autorização informada; não digite credenciais ou dados reais. Consulte [uso seguro](docs/USO_SEGURO.md).
+
+## Outras áreas
+
+- `dfir/` e `forense/`: resposta a incidentes e fluxo forense.
+- `defensiva/`: material defensivo e regras de detecção.
+- `osint/` e `tools/osint/`: metodologia e fontes públicas.
+- `pentest-autorizado/`: modelo de avaliação com escopo autorizado.
+- `tools/metasploit.sh`: instalador de terceiros para Termux; não foi executado. Consulte a [auditoria estática](tools/metasploit-auditoria.md), que descreve alterações amplas no ambiente, remoção recursiva e execução de conteúdo remoto.

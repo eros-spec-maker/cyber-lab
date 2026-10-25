@@ -1,0 +1,5 @@
+host=ws-014
+asset_owner=training-lab
+os=synthetic-linux-image
+collection_time=2026-01-14T09:20:00Z
+note=All values in this case are fictional and use documentation-only IP ranges.

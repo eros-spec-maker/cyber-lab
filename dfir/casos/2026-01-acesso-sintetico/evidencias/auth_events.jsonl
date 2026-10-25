@@ -1,0 +1,3 @@
+{"timestamp":"2026-01-14T09:02:11Z","host":"ws-014","source":"synthetic_auth_log","event":"authentication_failure","account":"analyst-demo","source_ip":"192.0.2.44","session":"none"}
+{"timestamp":"2026-01-14T09:02:19Z","host":"ws-014","source":"synthetic_auth_log","event":"authentication_failure","account":"analyst-demo","source_ip":"192.0.2.44","session":"none"}
+{"timestamp":"2026-01-14T09:03:02Z","host":"ws-014","source":"synthetic_auth_log","event":"authentication_success","account":"analyst-demo","source_ip":"192.0.2.44","session":"SYNTH-0007"}
